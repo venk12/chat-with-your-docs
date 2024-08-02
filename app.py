@@ -1,6 +1,9 @@
 import streamlit as st
 from process_document import upload_file, cleanup
 from embed_and_retrieve import create_query_engine, validate_api_key
+
+import chromadb
+import chromadb.errors as chromadb_errors
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
 from llama_index.llms.openai import OpenAI
 from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
@@ -8,8 +11,6 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.storage.storage_context import StorageContext
-import chromadb
-import chromadb.errors as chromadb_errors
 import openai
 import requests
 import logging

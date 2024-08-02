@@ -2,6 +2,8 @@ import os
 import tempfile
 import shutil
 import logging
+
+import chromadb
 import chromadb.errors as chromadb_errors
 
 logger = logging.getLogger()
