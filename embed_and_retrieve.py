@@ -8,6 +8,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 import chromadb
+import chromadb.errors as chromadb_errors
 import openai
 import requests
 import logging
@@ -54,13 +55,14 @@ def create_query_engine(file_path, provider, api_key):
 
     # Set up ChromaDB
     chroma_client = chromadb.Client()
+    collection_name = "document_collection"
     try:
-        chroma_collection = chroma_client.get_or_create_collection("document_collection")
-    except chromadb.errors.InvalidDimensionException as e:
-        logger.error(f"{e}. Deleting and recreating collection.")
-        chroma_client.delete_collection("document_collection")
-        chroma_collection = chroma_client.get_or_create_collection("document_collection")
-    
+        chroma_collection = chroma_client.create_collection(collection_name)      
+    except (ValueError, chromadb_errors.ChromaError) as e:
+        logger.info(f"{e}: Collection already exists. Deleting and creating a new collection.")
+        chroma_client.delete_collection(collection_name)
+        chroma_collection = chroma_client.create_collection(collection_name)
+
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
