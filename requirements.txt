@@ -1,6 +1,16 @@
 chromadb==0.5.5
 llama_index==0.10.59
+
+# HuggingFace
+llama-index-embeddings-huggingface==0.2.2
+llama-index-llms-huggingface==0.2.5
+llama-index-llms-huggingface-api==0.1.0
+
+# OpenAI
+llama-index-embeddings-openai==0.1.11
+llama-index-llms-openai==0.1.27
 openai==1.37.1
+
 Requests==2.32.3
 streamlit==1.36.0
 pysqlite3-binary
