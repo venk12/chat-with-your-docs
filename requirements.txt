@@ -4,4 +4,3 @@ openai==1.37.1
 Requests==2.32.3
 streamlit==1.36.0
 pysqlite3-binary
-pysqlite3==0.4.6
