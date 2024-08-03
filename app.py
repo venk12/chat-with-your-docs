@@ -43,7 +43,7 @@ if 'messages' not in st.session_state:
     st.session_state.messages = []
 
 # Streamlit app
-st.title("Chat with Your Documents")
+st.title(":speech_balloon: Chat with Your Documents")
 
 # Sidebar
 st.sidebar.header("Configuration")
