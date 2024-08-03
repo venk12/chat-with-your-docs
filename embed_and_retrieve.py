@@ -1,15 +1,21 @@
+import streamlit as st
+
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
 from llama_index.vector_stores.chroma import ChromaVectorStore
 from llama_index.core.storage.storage_context import StorageContext
 
 from llama_index.llms.openai import OpenAI
+from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
 from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding, HuggingFaceLLM
 
 import chromadb
 import openai
+from huggingface_hub.utils import HfHubHTTPError
+from openai import OpenAIError
 import requests
+
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -87,5 +93,23 @@ def create_query_engine(file_path, provider, api_key):
                 break
     except NotImplementedError as e:
         logger.warning(f"{e}: Streaming not supported. Creating query engine without streaming.")
-        query_engine = index.as_query_engine(service_context=service_context)
+        try:
+            query_engine = index.as_query_engine(service_context=service_context)
+            response = query_engine.query("What is the document about?")
+        except HfHubHTTPError as e:
+            logger.error(f"{e}: Most likely the rate limits of the HuggingFace API have been exceeded. Downloading the LLM")
+            try:
+                llm = HuggingFaceLLM(model_name="HuggingFaceH4/zephyr-7b-beta")
+                service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model)
+                query_engine = index.as_query_engine(service_context=service_context)
+                response = query_engine.query("What is the document about?")
+            except Exception as e:
+                logger.error(f"{e}: Unable to create query engine from HuggingFace.")
+                st.error("Unable to create query engine.")
+                return None
+        except OpenAIError as e:
+            logger.error(f"{e}: Most likely the rate limits of the OpenAI API have been exceeded.")
+            st.error("Unable to create query engine from OpenAI (Mostly due to rate limiting). Please try after sometime.")
+            return None
+
     return query_engine

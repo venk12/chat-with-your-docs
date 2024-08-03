@@ -1,6 +1,6 @@
 import streamlit as st
 
-# ChromaDB monkey patching
+# ChromaDB monkey patching, remove when fixed and uncomment to run locally
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
@@ -81,7 +81,13 @@ if embed_button and uploaded_file:
         st.session_state.query_engine = create_query_engine(file_path, provider, api_key)
         st.session_state.messages = []  # Clear chat history
     
-    st.sidebar.success("Document embedded successfully!")
+    if st.session_state.query_engine:
+        st.sidebar.success("Document embedded successfully!")
+    else:
+        st.sidebar.error("""Failed to embed document. There were issues creating the query engine.
+                         (Most likely due to rate limits on HuggingFace/OpenAI LLMs).
+                         Please obtain a (new) HF access token at https://hf.co/settings/tokens and try again.
+                         If the issue persists, please try again later.""")
 
 # Display chat messages
 for message in st.session_state.messages:
@@ -111,7 +117,10 @@ if prompt := st.chat_input("Ask a question about your document", disabled=not st
                 full_response = response.response
                 message_placeholder.markdown(full_response)
         else:
-            full_response = "Please upload and embed a document first."
+            full_response = """Please upload and embed a document first. 
+            If you have already done so, there was an issue with the query engine.
+            (Most likely due to rate limits on HuggingFace/OpenAI LLMs or an invalid API key).
+            Please obtain a (new) HF access token at https://hf.co/settings/tokens and try again."""
             message_placeholder.markdown(full_response)
 
         st.session_state.messages.append({"role": "assistant", "content": full_response})

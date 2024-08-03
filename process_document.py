@@ -5,6 +5,7 @@ import logging
 
 import chromadb
 import chromadb.errors as chromadb_errors
+from transformers import TRANSFORMERS_CACHE
 
 from embed_and_retrieve import get_logger
 
@@ -22,6 +23,10 @@ def upload_file(uploaded_file):
 def cleanup():
     # Remove temporary files
     shutil.rmtree(UPLOAD_DIR, ignore_errors=True)
+
+    # Clear Transformers cache (Remove any HF models downloaded)
+    if os.path.exists(TRANSFORMERS_CACHE):
+        shutil.rmtree(TRANSFORMERS_CACHE, ignore_errors=True)
     
     # Remove ChromaDB collection
     import chromadb
