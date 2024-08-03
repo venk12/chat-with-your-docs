@@ -8,11 +8,19 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 import chromadb
-import chromadb.errors as chromadb_errors
 import openai
 import requests
 import logging
-logger = logging.getLogger()
+from logging.handlers import RotatingFileHandler
+
+logger = logging.getLogger("chat_with_your_documents")
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s : %(message)s", 
+                    datefmt="%Y-%m-%d %H:%M:%S",
+                    level=logging.INFO,
+                    handlers=[logging.StreamHandler(), RotatingFileHandler(filename="chat_with_your_documents_app.log", maxBytes=5*1024*1024, backupCount=1)])
+
+def get_logger():
+    return logger
 
 def validate_api_key(provider, api_key):
     if provider == "OpenAI":
@@ -38,7 +46,7 @@ def validate_api_key(provider, api_key):
             return False
 
 def create_query_engine(file_path, provider, api_key):
-    # Set up the embedding model
+    # Set up the embedding and inference models
     if provider == "OpenAI":
         embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key=api_key)
         llm = OpenAI(api_key=api_key)
@@ -50,26 +58,34 @@ def create_query_engine(file_path, provider, api_key):
             embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
             llm = HuggingFaceInferenceAPI(model_name="HuggingFaceH4/zephyr-7b-beta")
 
-    # Load documents
+    
     documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
 
-    # Set up ChromaDB
+    # Set up the vector store (ChromaDB)
     chroma_client = chromadb.Client()
     collection_name = "document_collection"
     try:
         chroma_collection = chroma_client.create_collection(collection_name)      
-    except (ValueError, chromadb_errors.ChromaError) as e:
-        logger.info(f"{e}: Collection already exists. Deleting and creating a new collection.")
+    except (ValueError, chromadb.db.base.UniqueConstraintError, chromadb.errors.ChromaError) as e:
+        logger.warning(f"{e}: Collection already exists. Deleting and creating a new collection.")
         chroma_client.delete_collection(collection_name)
         chroma_collection = chroma_client.create_collection(collection_name)
 
     vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
-    # Create index
+    # Create vector store index
     service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model)
     index = VectorStoreIndex.from_documents(documents, storage_context=storage_context, service_context=service_context)
 
-    # Create and return query engine and document count
-    query_engine = index.as_query_engine(service_context=service_context)
+    # Create and return query engine (attempt streaming support)
+    try:
+        query_engine = index.as_query_engine(streaming=True, service_context=service_context)
+        response = query_engine.query("What is the document about?")
+        for text in response.response_gen:
+            if text is not None:
+                break
+    except NotImplementedError as e:
+        logger.warning(f"{e}: Streaming not supported. Creating query engine without streaming.")
+        query_engine = index.as_query_engine(service_context=service_context)
     return query_engine

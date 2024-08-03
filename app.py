@@ -6,13 +6,12 @@ import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 from process_document import upload_file, cleanup
-from embed_and_retrieve import create_query_engine, validate_api_key
+from embed_and_retrieve import create_query_engine, validate_api_key, get_logger
 
 import openai
 import requests
-import logging
 
-logger = logging.getLogger()
+logger = get_logger()
 
 def validate_api_key(provider, api_key):
     if provider == "OpenAI":
@@ -61,10 +60,8 @@ if uploaded_file:
         st.sidebar.error("Unsupported file type!")
         uploaded_file = None
 
-# Provider selection
 provider = st.sidebar.selectbox("Select Provider", ["OpenAI", "HuggingFace"])
 
-# API key input
 api_key = st.sidebar.text_input("Enter API Key", type="password")
 
 # Validate API key when entered
@@ -86,9 +83,6 @@ if embed_button and uploaded_file:
     
     st.sidebar.success("Document embedded successfully!")
 
-# Chat interface
-st.subheader("Chat")
-
 # Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -106,8 +100,16 @@ if prompt := st.chat_input("Ask a question about your document", disabled=not st
 
         if st.session_state.query_engine:
             response = st.session_state.query_engine.query(prompt)
-            full_response = response.response
-            message_placeholder.markdown(full_response)
+            # Attempt to stream response, otherwise fall back to standard block output
+            try:
+                for chunk in response.response_gen:
+                    full_response += chunk
+                    message_placeholder.markdown(full_response)
+            except Exception as e:
+                logger.warning(f"Streaming failed: {e}. Falling back to standard block output.")
+                response = st.session_state.query_engine.query(prompt)
+                full_response = response.response
+                message_placeholder.markdown(full_response)
         else:
             full_response = "Please upload and embed a document first."
             message_placeholder.markdown(full_response)

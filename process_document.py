@@ -6,7 +6,9 @@ import logging
 import chromadb
 import chromadb.errors as chromadb_errors
 
-logger = logging.getLogger()
+from embed_and_retrieve import get_logger
+
+logger = get_logger()
 
 # Create a temporary directory to store uploaded files
 UPLOAD_DIR = "data"
@@ -26,6 +28,5 @@ def cleanup():
     chroma_client = chromadb.Client()
     try:
         chroma_client.delete_collection("document_collection")
-    except chromadb_errors.ChromaError as e:
-        logger.warning(f"Failed to delete collection: {e}")
-        raise e
+    except (ValueError, chromadb_errors.ChromaError) as e:
+        logger.warning(f"Failed to delete collection: {e}. Ignoring exception.")
