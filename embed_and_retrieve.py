@@ -8,7 +8,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
 from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding, HuggingFaceLLM
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 import chromadb
 import openai
