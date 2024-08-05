@@ -120,19 +120,12 @@ if prompt := st.chat_input("Ask a question about your document", disabled=not st
                     full_response = response.response
                     message_placeholder.markdown(full_response)
             except (HfHubHTTPError, OpenAIError) as e:
-                logger.error(f"Query failed due to error: {e}")
-                try:
-                    st.session_state.query_engine = create_query_engine(file_path, provider, api_key, download_llm=True)
-                    response = st.session_state.query_engine.query(prompt)
-                    full_response = response.response
-                    message_placeholder.markdown(full_response)
-                except Exception as e:
-                    logger.error(f"Query engine creation failed due to error: {e}")
-                    full_response = """There was an issue with the creation of query engine.
-                    (Most likely due to rate limits on HuggingFace/OpenAI LLMs or an invalid API key).
-                    Please obtain a (new) HF access token at https://hf.co/settings/tokens
-                    and try again (with an API key if not used already)."""
-                    message_placeholder.markdown(full_response)
+                logger.error(f"Query response failed due to error: {e}")
+                full_response = """There was an issue with the creation of query engine.
+                (Most likely due to rate limits on HuggingFace/OpenAI LLMs or an invalid API key).
+                Please obtain a (new) HF access token at https://hf.co/settings/tokens
+                and try again (with a new API key if not provided)."""
+                message_placeholder.markdown(full_response)
         else:
             full_response = """Please upload and embed a document first. 
             If you have already done so, there was an issue with the query engine.
