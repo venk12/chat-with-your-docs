@@ -68,7 +68,10 @@ api_key = st.sidebar.text_input("Enter API Key", type="password")
 if validate_api_key(provider, api_key):
     st.sidebar.success("API key is valid!")
 else:
-    st.sidebar.error("Invalid API key!")
+    if not api_key:
+        st.sidebar.warning("Please provide an API key!")
+    else:
+        st.sidebar.error("Invalid API key!")
 
 # Enable/disable embed button
 embed_button = st.sidebar.button("Embed", disabled=not (uploaded_file and validate_api_key(provider, api_key)))
@@ -83,10 +86,17 @@ if embed_button and uploaded_file:
     if st.session_state.query_engine:
         st.sidebar.success("Document embedded successfully!")
     else:
-        st.sidebar.error("""Failed to embed document. There were issues creating the query engine.
-                         (Most likely due to rate limits on HuggingFace/OpenAI LLMs).
+        if provider == "HuggingFace":
+            st.sidebar.error("""Failed to embed document. There were issues creating the query engine.
+                         (Most likely due to rate limits on HuggingFace LLMs).
                          Please obtain a (new) HF access token at https://hf.co/settings/tokens and try again.
                          If the issue persists, please try again later.""")
+        elif provider == "OpenAI":
+            st.sidebar.error("""Failed to embed document. There were issues creating the query engine.
+                        (Most likely due to rate limits on OpenAI LLMs).
+                        Please obtain a (new) OpenAI API key at https://platform.openai.com/api-keys or 
+                        https://platform.openai.com/settings/profile?tab=api-keys and try again.
+                        If the issue persists, please try again later.""")
 
 # Display chat messages
 for message in st.session_state.messages:
