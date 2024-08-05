@@ -9,6 +9,8 @@ from process_document import upload_file, cleanup
 from embed_and_retrieve import create_query_engine, validate_api_key, get_logger
 
 import openai
+from openai import OpenAIError
+from huggingface_hub.utils import HfHubHTTPError
 import requests
 
 logger = get_logger()
@@ -105,17 +107,32 @@ if prompt := st.chat_input("Ask a question about your document", disabled=not st
         full_response = ""
 
         if st.session_state.query_engine:
-            response = st.session_state.query_engine.query(prompt)
-            # Attempt to stream response, otherwise fall back to standard block output
             try:
-                for chunk in response.response_gen:
-                    full_response += chunk
-                    message_placeholder.markdown(full_response)
-            except Exception as e:
-                logger.warning(f"Streaming failed: {e}. Falling back to standard block output.")
                 response = st.session_state.query_engine.query(prompt)
-                full_response = response.response
-                message_placeholder.markdown(full_response)
+                # Attempt to stream response, otherwise fall back to standard block output
+                try:
+                    for chunk in response.response_gen:
+                        full_response += chunk
+                        message_placeholder.markdown(full_response)
+                except Exception as e:
+                    logger.warning(f"Streaming failed: {e}. Falling back to standard block output.")
+                    response = st.session_state.query_engine.query(prompt)
+                    full_response = response.response
+                    message_placeholder.markdown(full_response)
+            except (HfHubHTTPError, OpenAIError) as e:
+                logger.error(f"Query failed due to error: {e}")
+                try:
+                    st.session_state.query_engine = create_query_engine(file_path, provider, api_key, download_llm=True)
+                    response = st.session_state.query_engine.query(prompt)
+                    full_response = response.response
+                    message_placeholder.markdown(full_response)
+                except Exception as e:
+                    logger.error(f"Query engine creation failed due to error: {e}")
+                    full_response = """There was an issue with the creation of query engine.
+                    (Most likely due to rate limits on HuggingFace/OpenAI LLMs or an invalid API key).
+                    Please obtain a (new) HF access token at https://hf.co/settings/tokens
+                    and try again (with an API key if not used already)."""
+                    message_placeholder.markdown(full_response)
         else:
             full_response = """Please upload and embed a document first. 
             If you have already done so, there was an issue with the query engine.

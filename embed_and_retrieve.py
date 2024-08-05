@@ -9,6 +9,8 @@ from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.llms.huggingface_api import HuggingFaceInferenceAPI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from transformers import BitsAndBytesConfig
+import torch
 
 import chromadb
 import openai
@@ -51,18 +53,31 @@ def validate_api_key(provider, api_key):
         except:
             return False
 
-def create_query_engine(file_path, provider, api_key):
+def create_query_engine(file_path, provider, api_key, download_llm=False):
     # Set up the embedding and inference models
     if provider == "OpenAI":
         embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key=api_key)
         llm = OpenAI(api_key=api_key)
     else:
+        # quantize to save memory if LLM needs to be downloaded
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
         if api_key:
             embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2", token=api_key)
-            llm = HuggingFaceInferenceAPI(model_name="HuggingFaceH4/zephyr-7b-beta", token=api_key)
+            if download_llm:
+                llm = HuggingFaceLLM(model_name="HuggingFaceH4/zephyr-7b-beta", model_kwargs={"quantization_config": quantization_config})
+            else:
+                llm = HuggingFaceInferenceAPI(model_name="HuggingFaceH4/zephyr-7b-beta", token=api_key)
         else:
             embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2")
-            llm = HuggingFaceInferenceAPI(model_name="HuggingFaceH4/zephyr-7b-beta")
+            if download_llm:
+                llm = HuggingFaceLLM(model_name="HuggingFaceH4/zephyr-7b-beta", model_kwargs={"quantization_config": quantization_config})
+            else:
+                llm = HuggingFaceInferenceAPI(model_name="HuggingFaceH4/zephyr-7b-beta")
 
     
     documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
@@ -99,7 +114,14 @@ def create_query_engine(file_path, provider, api_key):
         except HfHubHTTPError as e:
             logger.error(f"{e}: Most likely the rate limits of the HuggingFace API have been exceeded. Downloading the LLM")
             try:
-                llm = HuggingFaceLLM(model_name="HuggingFaceH4/zephyr-7b-beta")
+                # quantize to save memory since LLM needs to be downloaded
+                quantization_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_use_double_quant=True,
+                )
+                llm = HuggingFaceLLM(model_name="HuggingFaceH4/zephyr-7b-beta", model_kwargs={"quantization_config": quantization_config})
                 service_context = ServiceContext.from_defaults(llm=llm, embed_model=embed_model)
                 query_engine = index.as_query_engine(service_context=service_context)
                 response = query_engine.query("What is the document about?")
