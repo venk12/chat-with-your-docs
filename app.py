@@ -27,15 +27,13 @@ def validate_api_key(provider, api_key):
         except openai.OpenAIError as e:
             return False
     elif provider == "HuggingFace":
-        if not api_key:
-            return True
         try:
             response = requests.get(
                 "https://huggingface.co/api/whoami-v2",
                 headers={"Authorization": f"Bearer {api_key}"},
             )
             return response.status_code == 200
-        except:
+        except Exception as e:
             return False
 
 # Initialize session state variables
@@ -67,14 +65,13 @@ provider = st.sidebar.selectbox("Select Provider", ["OpenAI", "HuggingFace"])
 api_key = st.sidebar.text_input("Enter API Key", type="password")
 
 # Validate API key when entered
-if api_key:
-    if validate_api_key(provider, api_key):
-        st.sidebar.success("API key is valid!")
-    else:
-        st.sidebar.error("Invalid API key!")
+if validate_api_key(provider, api_key):
+    st.sidebar.success("API key is valid!")
+else:
+    st.sidebar.error("Invalid API key!")
 
 # Enable/disable embed button
-embed_button = st.sidebar.button("Embed", disabled=not (uploaded_file and (validate_api_key(provider, api_key) or (provider == "HuggingFace" and not api_key))))
+embed_button = st.sidebar.button("Embed", disabled=not (uploaded_file and validate_api_key(provider, api_key)))
 
 # Embed document when button is clicked
 if embed_button and uploaded_file:
