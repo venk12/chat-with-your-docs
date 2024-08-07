@@ -92,7 +92,7 @@ def create_query_engine(file_path, provider, api_key, download_llm=False):
             query_engine = index.as_query_engine(service_context=service_context)
             response = query_engine.query("What is the document about?")
         except HfHubHTTPError as e:
-            logger.error(f"{e}: Most likely the rate limits of the HuggingFace API have been exceeded. Downloading the LLM")
+            logger.error(f"{e}: Most likely the rate limits of the HuggingFace API have been exceeded.")
             st.error("""Unable to create query engine from HuggingFace (Most likely due to rate limiting). 
                      Please try with an API key or after sometime if an API key has already been used. 
                      Get a new API key at https://hf.co/settings/tokens and try again.""")
