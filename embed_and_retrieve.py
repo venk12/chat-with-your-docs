@@ -57,7 +57,7 @@ def create_query_engine(file_path, provider, api_key, download_llm=False):
         llm = OpenAI(model="gpt-4o-mini", api_key=api_key)
     else:
         embed_model = HuggingFaceEmbedding(model_name="sentence-transformers/all-MiniLM-L6-v2", token=api_key)
-        llm = HuggingFaceInferenceAPI(model_name="meta-llama/Meta-Llama-3.1-8B-Instruct", token=api_key)
+        llm = HuggingFaceInferenceAPI(model_name="meta-llama/Meta-Llama-3-8B-Instruct", token=api_key)
 
     
     documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
