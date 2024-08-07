@@ -49,7 +49,7 @@ st.title(":speech_balloon: Chat with Your Documents")
 st.sidebar.header("Configuration")
 
 # File uploader
-uploaded_file = st.sidebar.file_uploader("Upload a document (Max size 25MB)", type=["pdf", "docx", "pptx", "csv"])
+uploaded_file = st.sidebar.file_uploader("Upload a document (Max size 100MB)", type=["pdf", "docx", "pptx", "csv"])
 
 # Validate file upload and ensure it is a supported file type less than or equal to 25MB
 if uploaded_file:
