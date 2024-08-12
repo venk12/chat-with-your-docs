@@ -49,12 +49,12 @@ st.title(":speech_balloon: Chat with Your Documents")
 st.sidebar.header("Configuration")
 
 # File uploader
-uploaded_file = st.sidebar.file_uploader("Upload a document (Max size 25MB)", type=["pdf", "docx", "pptx", "csv"])
+uploaded_file = st.sidebar.file_uploader("Upload a document (Max size 100MB)", type=["pdf", "docx", "pptx", "csv"])
 
-# Validate file upload and ensure it is a supported file type less than or equal to 25MB
+# Validate file upload and ensure it is a supported file type less than or equal to 100MB
 if uploaded_file:
-    if uploaded_file.size > 25 * 1024 * 1024:
-        st.sidebar.error("File size exceeds 25MB limit!")
+    if uploaded_file.size > 100 * 1024 * 1024:
+        st.sidebar.error("File size exceeds 100MB limit!")
         uploaded_file = None
     elif uploaded_file.type not in ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "text/csv"]:
         st.sidebar.error("Unsupported file type!")
