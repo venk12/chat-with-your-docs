@@ -1,5 +1,5 @@
 # chat-with-your-docs
-Chat with your Text Documents (upto 25MB in size)
+Chat with your Text Documents (upto 100MB in size)
 
 **Tech Stack Used:** 
 - [LlamaIndex](https://docs.llamaindex.ai/en/stable/module_guides/loading/simpledirectoryreader/) for parsing documents
